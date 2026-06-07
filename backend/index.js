@@ -53,6 +53,9 @@ io.on("connection", (socket) => {
     });
 });
 
+// Trust proxy for rate limiting behind Railway/Vercel
+app.set("trust proxy", 1);
+
 // Rate Limiting
 const limiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
