@@ -29,6 +29,7 @@ const RequestAccessPage = lazy(() => import('./modules/doctor/RequestAccessPage'
 const DoctorAppointmentsPage = lazy(() => import('./modules/doctor/AppointmentsPage'));
 const ClinicalNotesPage = lazy(() => import('./modules/doctor/ClinicalNotesPage'));
 const DoctorAccessLogsPage = lazy(() => import('./modules/doctor/DoctorAccessLogsPage'));
+const SchedulePage = lazy(() => import('./modules/doctor/SchedulePage'));
 
 // ─── Admin Module ───
 const AdminDashboardPage = lazy(() => import('./modules/admin/AdminDashboardPage'));
@@ -139,6 +140,7 @@ export default function App() {
           <Route path="/doctor/request-access" element={<ProtectedRoute role="doctor"><RequestAccessPage /></ProtectedRoute>} />
           <Route path="/doctor/access-logs" element={<ProtectedRoute role="doctor"><DoctorAccessLogsPage /></ProtectedRoute>} />
           <Route path="/doctor/appointments" element={<ProtectedRoute role="doctor"><DoctorAppointmentsPage /></ProtectedRoute>} />
+          <Route path="/doctor/schedule" element={<ProtectedRoute role="doctor"><SchedulePage /></ProtectedRoute>} />
 
           {/* ═══ Admin Routes (Platform Admin only) ═══ */}
           <Route path="/admin/dashboard" element={<ProtectedRoute role="admin"><AdminDashboardPage /></ProtectedRoute>} />

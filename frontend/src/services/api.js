@@ -206,6 +206,12 @@ export const doctorAPI = {
   },
   listMessages: (appointmentId) => request('GET', `/doctors/me/appointments/${appointmentId}/messages`),
   sendMessage: (appointmentId, formData) => requestForm('POST', `/doctors/me/appointments/${appointmentId}/messages`, formData),
+
+  // Availability & Schedule
+  getAvailability: (date) => request('GET', `/doctors/me/availability?date=${date}`),
+  updateAvailability: (data) => request('PUT', '/doctors/me/availability', data),
+  getWeeklySchedule: () => request('GET', '/doctors/me/weekly-schedule'),
+  updateWeeklySchedule: (schedule) => request('PUT', '/doctors/me/weekly-schedule', { schedule }),
 };
 
 // ═══════════════════════════════════════════════════════════

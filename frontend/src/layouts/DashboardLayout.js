@@ -3,7 +3,7 @@ import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Menu, LogOut, Sun, Moon, ChevronLeft, X,
-  LayoutDashboard, Shield, QrCode, Key, ClipboardList, Bell,
+  LayoutDashboard, Shield, QrCode, Key, ClipboardList, Bell, Clock,
   Users, Search, Activity, Building2, GitBranch,
   Mail, UserCog,
 } from 'lucide-react';
@@ -36,6 +36,7 @@ const PATIENT_NAV = [
 const DOCTOR_NAV = [
   { section: 'Overview', items: [
     { to: '/doctor/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+    { to: '/doctor/schedule', icon: Clock, label: 'Schedule' },
     { to: '/doctor/appointments', icon: ClipboardList, label: 'Appointments' },
   ]},
   { section: 'Patients', items: [
@@ -109,10 +110,10 @@ function getBottomNavItems(role) {
     ];
     case 'doctor': return [
       { to: '/doctor/dashboard', icon: LayoutDashboard, label: 'Home' },
+      { to: '/doctor/schedule', icon: Clock, label: 'Schedule' },
       { to: '/doctor/appointments', icon: ClipboardList, label: 'Bookings' },
       { to: '/doctor/patients', icon: Users, label: 'Patients' },
       { to: '/doctor/request-access', icon: Search, label: 'Access' },
-      { to: '/doctor/access-logs', icon: Activity, label: 'Logs' },
     ];
     case 'admin': return [
       { to: '/admin/dashboard', icon: LayoutDashboard, label: 'Home' },

@@ -116,6 +116,34 @@ router.get(
     appointmentCtrl.listDoctorAppointments
 );
 
+router.get(
+    "/me/availability",
+    authMiddleware,
+    authorize("doctor"),
+    appointmentCtrl.getMyAvailability
+);
+
+router.put(
+    "/me/availability",
+    authMiddleware,
+    authorize("doctor"),
+    appointmentCtrl.updateMyAvailability
+);
+
+router.get(
+    "/me/weekly-schedule",
+    authMiddleware,
+    authorize("doctor"),
+    appointmentCtrl.getWeeklySchedule
+);
+
+router.put(
+    "/me/weekly-schedule",
+    authMiddleware,
+    authorize("doctor"),
+    appointmentCtrl.updateWeeklySchedule
+);
+
 router.patch(
     "/me/appointments/:appointmentId/status",
     authMiddleware,

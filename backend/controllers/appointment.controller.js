@@ -689,6 +689,210 @@ const addMessage = async (req, res) => {
     }
 };
 
+/**
+ * GET /api/doctors/me/availability
+ * Fetch availability for the logged-in doctor on a specific date.
+ * Falls back to recurring weekly schedule if no custom override exists for that date.
+ */
+const getMyAvailability = async (req, res) => {
+    try {
+        const doctor = await Doctor.findOne({ userId: req.user.id });
+        if (!doctor) {
+            return res.status(404).json({ success: false, message: "Doctor profile not found" });
+        }
+
+        const { date } = req.query;
+        if (!date) {
+            return res.status(400).json({ success: false, message: "Date is required (YYYY-MM-DD)" });
+        }
+
+        const queryDate = normalizeDate(date);
+        const availability = await DoctorAvailability.findOne({ doctorId: doctor._id, date: queryDate });
+
+        if (availability) {
+            return res.json({ success: true, data: availability, source: "custom" });
+        }
+
+        // Fallback: check recurring weekly schedule
+        const DoctorWeeklySchedule = require("../models/doctorWeeklySchedule");
+        const weeklySchedule = await DoctorWeeklySchedule.findOne({ doctorId: doctor._id });
+
+        if (weeklySchedule) {
+            const dayNames = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
+            const dayName = dayNames[queryDate.getDay()];
+            const daySlots = weeklySchedule[dayName] || [];
+
+            if (daySlots.length > 0) {
+                const slots = daySlots
+                    .filter(s => s.isAvailable)
+                    .map(s => ({ time: s.time, isBooked: false, bookedBy: null }));
+
+                return res.json({
+                    success: true,
+                    data: {
+                        doctorId: doctor._id,
+                        date: queryDate,
+                        slots
+                    },
+                    source: "recurring"
+                });
+            }
+        }
+
+        // Ultimate fallback: default slots
+        return res.json({
+            success: true,
+            data: {
+                doctorId: doctor._id,
+                date: queryDate,
+                slots: DEFAULT_SLOTS.map(time => ({ time, isBooked: false, bookedBy: null }))
+            },
+            source: "default"
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+/**
+ * PUT /api/doctors/me/availability
+ * Update availability slots for the logged-in doctor on a specific date
+ */
+const updateMyAvailability = async (req, res) => {
+    try {
+        const doctor = await Doctor.findOne({ userId: req.user.id });
+        if (!doctor) {
+            return res.status(404).json({ success: false, message: "Doctor profile not found" });
+        }
+
+        const { date, slots } = req.body;
+        if (!date || !slots || !Array.isArray(slots)) {
+            return res.status(400).json({ success: false, message: "Date and an array of slots are required" });
+        }
+
+        const queryDate = normalizeDate(date);
+        
+        // Fetch existing to ensure we don't accidentally drop booked slots if the client sends them as unbooked
+        let existingAvailability = await DoctorAvailability.findOne({ doctorId: doctor._id, date: queryDate });
+        
+        // Merge strategy: Keep existing booked slots, update unbooked slots
+        let finalSlots = [...slots];
+        
+        if (existingAvailability) {
+            const existingBooked = existingAvailability.slots.filter(s => s.isBooked);
+            
+            finalSlots = finalSlots.map(newSlot => {
+                const existing = existingBooked.find(eb => eb.time === newSlot.time);
+                if (existing) {
+                    return existing; // Retain booking details
+                }
+                return {
+                    time: newSlot.time,
+                    isBooked: false,
+                    bookedBy: null
+                };
+            });
+            
+            // Re-add any booked slots that the doctor might have accidentally removed from their schedule
+            existingBooked.forEach(eb => {
+                if (!finalSlots.find(fs => fs.time === eb.time)) {
+                    finalSlots.push(eb);
+                }
+            });
+            
+            // Sort slots chronologically just in case
+            finalSlots.sort((a, b) => {
+                const timeA = new Date(`1970/01/01 ${a.time}`);
+                const timeB = new Date(`1970/01/01 ${b.time}`);
+                return timeA - timeB;
+            });
+        }
+
+        const availability = await DoctorAvailability.findOneAndUpdate(
+            { doctorId: doctor._id, date: queryDate },
+            { $set: { slots: finalSlots } },
+            { new: true, upsert: true }
+        );
+
+        res.json({ success: true, message: "Availability updated successfully", data: availability });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+/**
+ * GET /api/doctors/me/weekly-schedule
+ * Fetch the recurring weekly schedule template for the logged-in doctor
+ */
+const getWeeklySchedule = async (req, res) => {
+    try {
+        const doctor = await Doctor.findOne({ userId: req.user.id });
+        if (!doctor) {
+            return res.status(404).json({ success: false, message: "Doctor profile not found" });
+        }
+
+        const DoctorWeeklySchedule = require("../models/doctorWeeklySchedule");
+        let schedule = await DoctorWeeklySchedule.findOne({ doctorId: doctor._id });
+
+        if (!schedule) {
+            // Return empty default
+            const defaultDay = DEFAULT_SLOTS.map(time => ({ time, isAvailable: true }));
+            schedule = {
+                doctorId: doctor._id,
+                sunday: [],
+                monday: defaultDay,
+                tuesday: defaultDay,
+                wednesday: defaultDay,
+                thursday: defaultDay,
+                friday: defaultDay,
+                saturday: []
+            };
+        }
+
+        res.json({ success: true, data: schedule });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+/**
+ * PUT /api/doctors/me/weekly-schedule
+ * Update the recurring weekly schedule template for the logged-in doctor
+ */
+const updateWeeklySchedule = async (req, res) => {
+    try {
+        const doctor = await Doctor.findOne({ userId: req.user.id });
+        if (!doctor) {
+            return res.status(404).json({ success: false, message: "Doctor profile not found" });
+        }
+
+        const { schedule } = req.body;
+        if (!schedule || typeof schedule !== "object") {
+            return res.status(400).json({ success: false, message: "Schedule object is required" });
+        }
+
+        const DoctorWeeklySchedule = require("../models/doctorWeeklySchedule");
+        const dayNames = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
+        
+        const updateData = {};
+        dayNames.forEach(day => {
+            if (Array.isArray(schedule[day])) {
+                updateData[day] = schedule[day];
+            }
+        });
+
+        const updatedSchedule = await DoctorWeeklySchedule.findOneAndUpdate(
+            { doctorId: doctor._id },
+            { $set: updateData },
+            { new: true, upsert: true }
+        );
+
+        res.json({ success: true, message: "Weekly schedule saved successfully", data: updatedSchedule });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
 module.exports = {
     getDoctorAvailability,
     bookAppointment,
@@ -698,5 +902,10 @@ module.exports = {
     updateAppointmentStatus,
     uploadPatientPrescription,
     listMessages,
-    addMessage
+    addMessage,
+    getMyAvailability,
+    updateMyAvailability,
+    getWeeklySchedule,
+    updateWeeklySchedule
 };
+
