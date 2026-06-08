@@ -44,7 +44,7 @@ export default function EmergencyQRPage() {
 
   const handleGenerate = async () => {
     setGenerating(true);
-    const res = await patientAPI.generateQR({ expiryHours: 72, maxScans: 10, includeInsurance: true });
+    const res = await patientAPI.generateQR({ expiryHours: 72, maxScans: 10, includeInsurance: true, origin: window.location.origin });
     if (res.success) {
       setQR(res.data);
       toast.success('Emergency QR code generated!');

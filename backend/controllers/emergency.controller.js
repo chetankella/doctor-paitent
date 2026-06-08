@@ -6,11 +6,11 @@ const EmergencyQRService = require("../services/emergencyQR.service");
  */
 const generateQR = async (req, res) => {
     try {
-        const { expiryHours = 72, maxScans = 10, includeInsurance = false } = req.body;
+        const { expiryHours = 72, maxScans = 10, includeInsurance = false, origin } = req.body;
 
         const qr = await EmergencyQRService.generateQR(
             req.user.id,
-            { expiryHours, maxScans, includeInsurance }
+            { expiryHours, maxScans, includeInsurance, origin }
         );
 
         return res.status(201).json({

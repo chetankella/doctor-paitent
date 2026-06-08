@@ -6,7 +6,7 @@ const Patient = require("../models/patientProfile");
  * Generate a new emergency QR for a patient.
  * Automatically revokes any existing active QR for this patient.
  */
-async function generateQR(patientId, { expiryHours = 72, maxScans = 10, includeInsurance = false } = {}) {
+async function generateQR(patientId, { expiryHours = 72, maxScans = 10, includeInsurance = false, origin } = {}) {
     // Revoke any existing active QR
     await EmergencyQR.updateMany(
         { patientId, status: "ACTIVE" },
@@ -30,7 +30,8 @@ async function generateQR(patientId, { expiryHours = 72, maxScans = 10, includeI
     const expiresAt = new Date(Date.now() + expiryHours * 60 * 60 * 1000);
 
     // Build the QR data URL — just the reference code
-    const scanUrl = `${process.env.FRONTEND_URL || process.env.APP_URL || "http://localhost:3000"}/emergency/${referenceCode}`;
+    const baseUrl = origin || process.env.FRONTEND_URL || process.env.APP_URL || "http://localhost:3000";
+    const scanUrl = `${baseUrl}/emergency/${referenceCode}`;
 
     // Generate QR code image
     const qrCodeImage = await QRCode.toDataURL(scanUrl, {
