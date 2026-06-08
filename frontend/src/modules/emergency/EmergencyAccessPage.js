@@ -26,12 +26,14 @@ export default function EmergencyAccessPage() {
     setLoading(false);
   }, [code]);
 
-  // Parse URL hash for direct QR links
+  // Parse URL hash or path params for direct QR links
+  const { referenceCode } = require('react-router-dom').useParams();
+
   React.useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const ref = params.get('ref') || params.get('code');
+    const ref = referenceCode || params.get('ref') || params.get('code');
     if (ref) { setCode(ref); handleScan(ref); }
-  }, [handleScan]);
+  }, [handleScan, referenceCode]);
 
   return (
     <div className="emergency-page">

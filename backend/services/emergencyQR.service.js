@@ -30,7 +30,7 @@ async function generateQR(patientId, { expiryHours = 72, maxScans = 10, includeI
     const expiresAt = new Date(Date.now() + expiryHours * 60 * 60 * 1000);
 
     // Build the QR data URL — just the reference code
-    const scanUrl = `${process.env.APP_URL || "http://localhost:3000"}/api/emergency/access/${referenceCode}`;
+    const scanUrl = `${process.env.FRONTEND_URL || process.env.APP_URL || "http://localhost:3000"}/emergency/${referenceCode}`;
 
     // Generate QR code image
     const qrCodeImage = await QRCode.toDataURL(scanUrl, {
