@@ -8,6 +8,8 @@
   min-height: 100vh;
   overflow-x: hidden;
   max-width: 100vw;
+  width: 100%;
+  position: relative;
 }
 
 /* ─── Sidebar (Desktop) ─── */
@@ -245,6 +247,8 @@
   max-width: var(--content-max-width);
   width: 100%;
   margin: 0 auto;
+  box-sizing: border-box;
+  overflow-x: hidden;
 }
 
 .page-header {
@@ -265,82 +269,24 @@
 .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-4); }
 .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-4); }
 
-/* ─── Fixed Bottom Navigation Bar (Mobile) ─── */
-.bottom-nav {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: var(--bottom-nav-height, 64px);
-  padding-bottom: env(safe-area-inset-bottom, 0px);
-  background: var(--bg-primary);
-  border-top: 1px solid var(--border-light);
-  display: flex;
-  align-items: center;
-  justify-content: space-around;
-  z-index: 900;
-  box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.06);
-}
-
-[data-theme='dark'] .bottom-nav {
-  background: var(--bg-secondary);
-  box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.25);
-}
-
-.bottom-nav-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 2px;
-  flex: 1;
-  padding: 6px 0;
-  color: var(--text-tertiary);
-  text-decoration: none;
-  font-size: 10px;
-  font-weight: var(--font-weight-medium);
-  transition: color var(--transition-fast);
-  position: relative;
-  -webkit-tap-highlight-color: transparent;
-}
-
-.bottom-nav-item:hover {
-  text-decoration: none;
-}
-
-.bottom-nav-item svg {
-  width: 22px;
-  height: 22px;
-  transition: all var(--transition-fast);
-}
-
-.bottom-nav-item.active {
-  color: var(--color-primary-600);
-  font-weight: var(--font-weight-semibold);
-}
-
-.bottom-nav-item.active::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 32px;
-  height: 3px;
-  border-radius: 0 0 3px 3px;
-  background: var(--color-primary-500);
-}
-
-.bottom-nav-item.active svg {
-  transform: scale(1.1);
-}
+/* ─── Fixed Bottom Navigation Bar (Mobile) — styles now inline via Framer Motion ─── */
+/* Keeping this block for any legacy references */
+.bottom-nav-item { -webkit-tap-highlight-color: transparent; }
 
 /* ─── Mobile Overrides ─── */
 @media (max-width: 768px) {
-  .dashboard-main { margin-left: 0 !important; }
+  .dashboard-main {
+    margin-left: 0 !important;
+    width: 100%;
+    max-width: 100vw;
+    overflow-x: hidden;
+  }
   .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
   .dashboard-content {
-    padding: var(--space-4) var(--space-4) calc(var(--bottom-nav-height, 64px) + env(safe-area-inset-bottom, 0px) + var(--space-4));
+    /* 64px nav height + 20px from bottom + 20px breathing room */
+    padding: var(--space-3) var(--space-3) calc(64px + 20px + 20px + env(safe-area-inset-bottom, 0px));
+    max-width: 100%;
+    overflow-x: hidden;
   }
   .dashboard-navbar {
     padding: 0 var(--space-4);

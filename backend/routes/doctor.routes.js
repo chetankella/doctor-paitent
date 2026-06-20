@@ -7,6 +7,7 @@ const accessRequestCtrl = require("../controllers/accessRequest.controller");
 const accessLogCtrl = require("../controllers/accessLog.controller");
 const appointmentCtrl = require("../controllers/appointment.controller");
 const doctorCtrl = require("../controllers/doctor.controller");
+const videoConsultCtrl = require("../controllers/videoConsult.controller");
 const upload = require("../middleware/upload");
 
 // ─── Middleware ───
@@ -193,6 +194,37 @@ router.get(
     authMiddleware,
     authorize("doctor"),
     doctorCtrl.doctorProfile
+);
+
+// ═══════════════════════════════════════════════════════════
+// VIDEO CONSULTATION  (/me/video-availability, /me/instant-requests)
+// ═══════════════════════════════════════════════════════════
+router.patch(
+    "/me/video-availability",
+    authMiddleware,
+    authorize("doctor"),
+    videoConsultCtrl.toggleVideoAvailability
+);
+
+router.get(
+    "/me/instant-requests",
+    authMiddleware,
+    authorize("doctor"),
+    videoConsultCtrl.getInstantRequests
+);
+
+router.get(
+    "/me/appointments/:appointmentId/video-token",
+    authMiddleware,
+    authorize("doctor"),
+    videoConsultCtrl.getVideoToken
+);
+
+router.patch(
+    "/me/appointments/:appointmentId/video-end",
+    authMiddleware,
+    authorize("doctor"),
+    videoConsultCtrl.endVideoCall
 );
 
 module.exports = router;

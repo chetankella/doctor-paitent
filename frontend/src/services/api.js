@@ -162,6 +162,11 @@ export const patientAPI = {
   uploadPrescription: (appointmentId, formData) => requestForm('POST', `/patients/me/appointments/${appointmentId}/prescription`, formData),
   listMessages: (appointmentId) => request('GET', `/patients/me/appointments/${appointmentId}/messages`),
   sendMessage: (appointmentId, formData) => requestForm('POST', `/patients/me/appointments/${appointmentId}/messages`, formData),
+
+  // Video Consultation
+  getInstantDoctors: () => request('GET', '/patients/me/instant-doctors'),
+  bookInstantConsult: (doctorId) => request('POST', '/patients/me/instant-consult', { doctorId }),
+  getVideoToken: (appointmentId) => request('GET', `/patients/me/appointments/${appointmentId}/video-token`),
 };
 
 // ═══════════════════════════════════════════════════════════
@@ -212,6 +217,13 @@ export const doctorAPI = {
   updateAvailability: (data) => request('PUT', '/doctors/me/availability', data),
   getWeeklySchedule: () => request('GET', '/doctors/me/weekly-schedule'),
   updateWeeklySchedule: (schedule) => request('PUT', '/doctors/me/weekly-schedule', { schedule }),
+
+  // Video Consultation
+  toggleVideoAvailability: (isAvailable, videoConsultFee) =>
+    request('PATCH', '/doctors/me/video-availability', { isAvailable, videoConsultFee }),
+  getInstantRequests: () => request('GET', '/doctors/me/instant-requests'),
+  getVideoToken: (appointmentId) => request('GET', `/doctors/me/appointments/${appointmentId}/video-token`),
+  endVideoCall: (appointmentId) => request('PATCH', `/doctors/me/appointments/${appointmentId}/video-end`),
 };
 
 // ═══════════════════════════════════════════════════════════

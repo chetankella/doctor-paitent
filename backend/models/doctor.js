@@ -79,6 +79,17 @@ const doctorSchema = new mongoose.Schema({
     profileImage: {
         type: String,
         default: ""
+    },
+
+    isAvailableForVideoConsult: {
+        type: Boolean,
+        default: false,
+        index: true
+    },
+
+    videoConsultFee: {
+        type: Number,
+        default: null   // null means: use consultationFee
     }
 
 }, { timestamps: true });

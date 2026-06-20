@@ -3,13 +3,14 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Search, User, Award, Building2, Key, ChevronRight,
   Star, Calendar, Stethoscope, CheckCircle2,
-  AlertCircle, Thermometer, X, SlidersHorizontal
+  AlertCircle, Thermometer, X, SlidersHorizontal, Video, MapPin
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import DashboardLayout from '../../layouts/DashboardLayout';
 import { patientAPI } from '../../services/api';
 import { Spinner, EmptyState } from '../../components/ui';
 import Modal from '../../components/ui/Modal';
+import { useNavigate } from 'react-router-dom';
 
 const SPECIALIZATIONS = [
   { name: 'General Physician', icon: Thermometer, color: '#3b82f6' },
@@ -51,10 +52,12 @@ const AVAILABILITY_OPTIONS = [
 ];
 
 export default function FindDoctorsPage() {
+  const navigate = useNavigate();
   const [doctors, setDoctors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
   const [showFilterSheet, setShowFilterSheet] = useState(false);
+  const [consultMode, setConsultMode] = useState('video'); // 'video' | 'physical'
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth <= 768);
@@ -143,6 +146,20 @@ export default function FindDoctorsPage() {
   // Main Fetch Doctors
   const fetchDoctors = useCallback(async () => {
     setLoading(true);
+
+    if (consultMode === 'video') {
+      // In video mode: only show doctors available for instant video consult
+      const res = await patientAPI.getInstantDoctors();
+      if (res.success) {
+        setDoctors(res.data || []);
+      } else {
+        toast.error(res.error || 'Failed to load doctors');
+      }
+      setLoading(false);
+      return;
+    }
+
+    // Physical mode: normal search
     const params = {};
     if (search.trim()) params.search = search;
     if (specialization) params.specialization = specialization;
@@ -163,7 +180,7 @@ export default function FindDoctorsPage() {
       toast.error(res.error || 'Failed to load doctors');
     }
     setLoading(false);
-  }, [search, specialization, experience, rating, availability, city, fee]);
+  }, [search, specialization, experience, rating, availability, city, fee, consultMode]);
 
   useEffect(() => {
     const delayDebounce = setTimeout(() => {
@@ -298,100 +315,13 @@ export default function FindDoctorsPage() {
 
   return (
     <DashboardLayout title="Find & Book Doctors">
-      {/* Search Header Banner */}
-      <div style={{
-        position: 'relative', overflow: 'hidden',
-        background: 'linear-gradient(135deg, var(--color-primary-600) 0%, var(--color-primary-800) 100%)',
-        color: '#fff',
-        padding: isMobile ? 'var(--space-5) var(--space-4)' : 'var(--space-8) var(--space-6)',
-        borderRadius: 'var(--radius-xl)',
-        marginBottom: 'var(--space-6)', boxShadow: 'var(--shadow-md)'
-      }}>
-        <div style={{ position: 'relative', zIndex: 2, maxWidth: '650px' }}>
-          <span style={{
-            background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(4px)',
-            color: '#fff', padding: '4px 12px', borderRadius: '50px', fontSize: 'var(--font-size-xs)',
-            fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em'
-          }}>
-            Instant Consultations
-          </span>
-          <h1 style={{
-            color: '#fff',
-            fontSize: isMobile ? 'var(--font-size-xl)' : 'var(--font-size-3xl)',
-            fontWeight: 800, marginTop: '12px', marginBottom: '8px'
-          }}>
-            Book Doctors Like Ordering Food
-          </h1>
-          <p style={{
-            color: 'rgba(255,255,255,0.85)',
-            fontSize: isMobile ? 'var(--font-size-xs)' : 'var(--font-size-base)',
-            lineHeight: 1.5
-          }}>
-            Search verified healthcare experts by symptoms, specializations, or hospital clinics and secure your slot instantly.
-          </p>
-        </div>
-        {!isMobile && (
-          <div style={{
-            position: 'absolute', right: '-30px', bottom: '-40px', opacity: 0.15,
-            color: '#fff', transform: 'rotate(-10deg)'
-          }}>
-            <Stethoscope size={250} />
-          </div>
-        )}
-      </div>
-
-      {/* Specialization pills list (Swiggy Categories Style) */}
-      <div style={{
-        marginBottom: 'var(--space-6)', display: 'flex',
-        flexWrap: isMobile ? 'wrap' : 'nowrap',
-        overflowX: isMobile ? 'visible' : 'auto',
-        gap: isMobile ? 'var(--space-2)' : 'var(--space-3)', paddingBottom: '4px',
-        msOverflowStyle: 'none', scrollbarWidth: 'none'
-      }}>
-        <button
-          onClick={() => setSpecialization('')}
-          className={`btn ${specialization === '' ? 'btn-primary' : 'btn-secondary'}`}
-          style={{
-            borderRadius: '50px', whiteSpace: 'nowrap',
-            padding: isMobile ? '6px 14px' : '8px 18px',
-            fontSize: isMobile ? 'var(--font-size-xs)' : 'var(--font-size-sm)',
-            minHeight: isMobile ? '36px' : 'auto',
-            scrollSnapAlign: 'start'
-          }}
-        >
-          All
-        </button>
-        {SPECIALIZATIONS.map((spec) => {
-          const isSelected = specialization === spec.name;
-          return (
-            <button
-              key={spec.name}
-              onClick={() => setSpecialization(spec.name)}
-              className={`btn ${isSelected ? 'btn-primary' : 'btn-secondary'}`}
-              style={{
-                borderRadius: '50px', whiteSpace: 'nowrap',
-                padding: isMobile ? '6px 14px' : '8px 18px',
-                fontSize: isMobile ? 'var(--font-size-xs)' : 'var(--font-size-sm)',
-                display: 'flex', alignItems: 'center', gap: 'var(--space-2)',
-                minHeight: isMobile ? '36px' : 'auto',
-                scrollSnapAlign: 'start'
-              }}
-            >
-              <spec.icon size={isMobile ? 13 : 15} style={{ color: isSelected ? '#fff' : spec.color }} />
-              {spec.name}
-            </button>
-          );
-        })}
-      </div>
-
       {/* Autocomplete Search & Filters Card */}
-      <div className="card" style={{ marginBottom: 'var(--space-6)', padding: isMobile ? 'var(--space-3)' : 'var(--space-4)' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 'var(--space-3)' }}>
+      <div style={{ marginBottom: 'var(--space-6)', display: 'flex', flexDirection: 'column', gap: '12px', position: 'relative', zIndex: 10 }}>
+        <div style={{ display: 'flex', gap: '8px' }}>
           {/* Search container */}
-          <div ref={searchContainerRef} style={{ position: 'relative' }}>
-            <Search size={18} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-tertiary)' }} />
+          <div ref={searchContainerRef} style={{ position: 'relative', flex: 1 }}>
+            <Search size={20} style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: 'var(--color-primary-500)' }} />
             <input
-              className="input-field"
               type="text"
               placeholder={isMobile ? 'Search doctors, symptoms...' : 'Search doctor names, symptoms (e.g. fever, chest pain), specialization, hospital...'}
               value={search}
@@ -400,7 +330,18 @@ export default function FindDoctorsPage() {
                 setSearch(e.target.value);
                 setShowSuggestions(true);
               }}
-              style={{ paddingLeft: 42, width: '100%', height: '44px', borderRadius: 'var(--radius-lg)' }}
+              style={{ 
+                paddingLeft: 46, paddingRight: 16, width: '100%', height: '52px', 
+                borderRadius: '999px',
+                border: '1px solid var(--border-light)',
+                boxShadow: '0 4px 16px rgba(0,0,0,0.06)',
+                fontSize: '15px',
+                backgroundColor: 'white',
+                outline: 'none',
+                transition: 'border-color 0.2s',
+              }}
+              onFocusCapture={(e) => e.target.style.borderColor = 'var(--color-primary-400)'}
+              onBlurCapture={(e) => e.target.style.borderColor = 'var(--border-light)'}
             />
             
             {/* Autocomplete Dropdown List */}
@@ -411,10 +352,10 @@ export default function FindDoctorsPage() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: 5 }}
                   style={{
-                    position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0,
-                    backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border-light)',
-                    borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-lg)', zIndex: 100,
-                    overflow: 'hidden', maxHeight: '300px'
+                    position: 'absolute', top: 'calc(100% + 8px)', left: 0, right: 0,
+                    backgroundColor: 'white', border: '1px solid var(--border-light)',
+                    borderRadius: '20px', boxShadow: '0 8px 32px rgba(0,0,0,0.12)', zIndex: 100,
+                    overflow: 'hidden', maxHeight: '300px', padding: '8px'
                   }}
                 >
                   {suggestions.map((sug, idx) => (
@@ -422,19 +363,19 @@ export default function FindDoctorsPage() {
                       key={idx}
                       onClick={() => handleSelectSuggestion(sug)}
                       style={{
-                        padding: '12px 16px', cursor: 'pointer', borderBottom: '1px solid var(--border-light)',
-                        display: 'flex', alignItems: 'center', gap: 'var(--space-2)', fontSize: 'var(--font-size-sm)',
+                        padding: '12px 16px', cursor: 'pointer', borderRadius: '12px',
+                        display: 'flex', alignItems: 'center', gap: '12px', fontSize: '14px',
                         transition: 'background 0.1s ease', color: 'var(--text-primary)'
                       }}
                       onMouseEnter={(e) => e.target.style.background = 'var(--bg-secondary)'}
                       onMouseLeave={(e) => e.target.style.background = 'transparent'}
                     >
-                      {sug.type === 'doctor' ? <User size={14} style={{ color: 'var(--color-primary-500)' }} /> :
-                       sug.type === 'specialization' ? <Stethoscope size={14} style={{ color: '#10b981' }} /> :
-                       <Thermometer size={14} style={{ color: '#ef4444' }} />}
+                      {sug.type === 'doctor' ? <User size={16} style={{ color: 'var(--color-primary-500)' }} /> :
+                       sug.type === 'specialization' ? <Stethoscope size={16} style={{ color: '#10b981' }} /> :
+                       <Thermometer size={16} style={{ color: '#ef4444' }} />}
                       <div>
                         <span style={{ fontWeight: 600 }}>{sug.value}</span>
-                        <span style={{ color: 'var(--text-tertiary)', fontSize: 'var(--font-size-xs)', marginLeft: '8px' }}>
+                        <span style={{ color: 'var(--text-tertiary)', fontSize: '12px', marginLeft: '8px' }}>
                           ({sug.type})
                         </span>
                       </div>
@@ -445,53 +386,177 @@ export default function FindDoctorsPage() {
             </AnimatePresence>
           </div>
 
-          {/* Desktop: inline filters | Mobile: filter button */}
-          {isMobile ? (
+          {/* Mobile: filter button */}
+          {isMobile && (
             <button
-              className="btn btn-secondary"
               onClick={() => setShowFilterSheet(true)}
               style={{
-                display: 'flex', alignItems: 'center', gap: '6px',
-                width: '100%', justifyContent: 'center',
-                borderRadius: 'var(--radius-md)', minHeight: '40px'
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                width: '52px', height: '52px', flexShrink: 0,
+                backgroundColor: 'white',
+                border: '1px solid var(--border-light)',
+                borderRadius: '999px',
+                boxShadow: '0 4px 16px rgba(0,0,0,0.06)',
+                color: 'var(--text-secondary)',
+                cursor: 'pointer',
+                position: 'relative'
               }}
             >
-              <SlidersHorizontal size={16} />
-              Filters
+              <SlidersHorizontal size={20} />
               {(city || experience || rating || fee || availability) && (
                 <span style={{
+                  position: 'absolute', top: 12, right: 12,
                   width: '8px', height: '8px', borderRadius: '50%',
-                  background: 'var(--color-primary-500)', display: 'inline-block'
+                  background: 'var(--color-primary-500)', border: '2px solid white'
                 }} />
               )}
             </button>
-          ) : (
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-3)' }}>
-              <div style={{ minWidth: '130px' }}>
-                <input type="text" className="input-field" placeholder="City (e.g. Mumbai)"
-                  value={city} onChange={(e) => setCity(e.target.value)}
-                  style={{ height: '36px', fontSize: 'var(--font-size-sm)' }} />
-              </div>
-              <select className="input-field" value={experience} onChange={(e) => setExperience(e.target.value)}
-                style={{ width: 'auto', height: '36px', fontSize: 'var(--font-size-sm)' }}>
-                {EXPERIENCE_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-              </select>
-              <select className="input-field" value={rating} onChange={(e) => setRating(e.target.value)}
-                style={{ width: 'auto', height: '36px', fontSize: 'var(--font-size-sm)' }}>
-                {RATING_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-              </select>
-              <select className="input-field" value={fee} onChange={(e) => setFee(e.target.value)}
-                style={{ width: 'auto', height: '36px', fontSize: 'var(--font-size-sm)' }}>
-                {FEE_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-              </select>
-              <select className="input-field" value={availability} onChange={(e) => setAvailability(e.target.value)}
-                style={{ width: 'auto', height: '36px', fontSize: 'var(--font-size-sm)' }}>
-                {AVAILABILITY_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-              </select>
-            </div>
           )}
         </div>
+
+        {/* Desktop: inline filters */}
+        {!isMobile && (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+            <button
+              onClick={() => setShowFilterSheet(true)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '6px',
+                backgroundColor: 'white', border: '1px solid var(--border-light)',
+                borderRadius: '999px', padding: '8px 16px', fontSize: '13px', fontWeight: 600,
+                color: 'var(--text-secondary)', cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
+              }}
+            >
+              <SlidersHorizontal size={14} />
+              More Filters
+              {(city || experience || rating || fee || availability) && (
+                <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--color-primary-500)' }} />
+              )}
+            </button>
+            <div style={{ width: '130px' }}>
+              <input type="text" placeholder="City" value={city} onChange={(e) => setCity(e.target.value)}
+                style={{ width: '100%', height: '36px', borderRadius: '999px', border: '1px solid var(--border-light)', padding: '0 16px', fontSize: '13px', outline: 'none' }} />
+            </div>
+          </div>
+        )}
       </div>
+
+
+
+      {/* ── Consultation Mode Toggle ── */}
+      <div style={{
+        display: 'flex',
+        justifyContent: 'center',
+        marginBottom: 'var(--space-6)',
+      }}>
+        <div style={{
+          display: 'inline-flex',
+          backgroundColor: '#f1f5f9',
+          borderRadius: '999px',
+          padding: '5px',
+          position: 'relative',
+          boxShadow: 'inset 0 2px 6px rgba(0,0,0,0.08)',
+          gap: '4px',
+        }}>
+          {/* Sliding pill background */}
+          <motion.div
+            layout
+            layoutId="consult-pill"
+            transition={{ type: 'spring', stiffness: 420, damping: 34 }}
+            style={{
+              position: 'absolute',
+              top: '5px',
+              bottom: '5px',
+              borderRadius: '999px',
+              background: consultMode === 'video'
+                ? 'linear-gradient(135deg, #2563eb 0%, #0ea5e9 100%)'
+                : 'linear-gradient(135deg, #059669 0%, #10b981 100%)',
+              boxShadow: '0 4px 14px rgba(37, 99, 235, 0.35)',
+              left: consultMode === 'video' ? '5px' : 'calc(50% + 2px)',
+              width: 'calc(50% - 7px)',
+            }}
+          />
+
+          {/* Video Consultation Button */}
+          <motion.button
+            onClick={() => setConsultMode('video')}
+            whileTap={{ scale: 0.97 }}
+            style={{
+              position: 'relative', zIndex: 1,
+              padding: isMobile ? '10px 22px' : '12px 36px',
+              borderRadius: '999px',
+              border: 'none',
+              background: 'transparent',
+              cursor: 'pointer',
+              display: 'flex', alignItems: 'center', gap: '8px',
+              fontSize: isMobile ? '13px' : '15px',
+              fontWeight: 700,
+              color: consultMode === 'video' ? '#fff' : '#64748b',
+              transition: 'color 0.2s ease',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            <motion.span
+              animate={{ scale: consultMode === 'video' ? 1.15 : 1 }}
+              transition={{ type: 'spring', stiffness: 400, damping: 20 }}
+              style={{ fontSize: '18px', lineHeight: 1 }}
+            >
+              <Video size={18} strokeWidth={2.5} />
+            </motion.span>
+            Video Consult
+          </motion.button>
+
+          {/* Physical Consultation Button */}
+          <motion.button
+            onClick={() => setConsultMode('physical')}
+            whileTap={{ scale: 0.97 }}
+            style={{
+              position: 'relative', zIndex: 1,
+              padding: isMobile ? '10px 22px' : '12px 36px',
+              borderRadius: '999px',
+              border: 'none',
+              background: 'transparent',
+              cursor: 'pointer',
+              display: 'flex', alignItems: 'center', gap: '8px',
+              fontSize: isMobile ? '13px' : '15px',
+              fontWeight: 700,
+              color: consultMode === 'physical' ? '#fff' : '#64748b',
+              transition: 'color 0.2s ease',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            <motion.span
+              animate={{ scale: consultMode === 'physical' ? 1.15 : 1 }}
+              transition={{ type: 'spring', stiffness: 400, damping: 20 }}
+              style={{ fontSize: '18px', lineHeight: 1 }}
+            >
+              <MapPin size={18} strokeWidth={2.5} />
+            </motion.span>
+            In-Person
+          </motion.button>
+        </div>
+      </div>
+
+      {/* Mode description hint */}
+      <AnimatePresence mode="wait">
+        <motion.p
+          key={consultMode}
+          initial={{ opacity: 0, y: -6 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: 6 }}
+          transition={{ duration: 0.2 }}
+          style={{
+            textAlign: 'center',
+            fontSize: '13px',
+            color: 'var(--text-secondary)',
+            marginTop: '-16px',
+            marginBottom: 'var(--space-5)',
+          }}
+        >
+          {consultMode === 'video'
+            ? 'Connect with a doctor from home — quick & convenient'
+            : 'Visit a clinic and meet your doctor in person'}
+        </motion.p>
+      </AnimatePresence>
 
       {/* Mobile Filter Bottom Sheet */}
       <AnimatePresence>
@@ -585,127 +650,83 @@ export default function FindDoctorsPage() {
                 border: '1px solid var(--border-light)', position: 'relative'
               }}
             >
-              {/* Doctor Avatar Header Cover */}
-              <div style={{
-                height: isMobile ? '60px' : '80px',
-                background: 'linear-gradient(135deg, var(--color-primary-100) 0%, var(--color-primary-200) 100%)',
-                position: 'relative'
-              }}>
-                <span style={{
-                  position: 'absolute', top: 12, left: 12,
-                  backgroundColor: 'rgba(255,255,255,0.95)', color: 'var(--color-primary-700)',
-                  fontSize: '11px', fontWeight: 700, padding: '4px 10px', borderRadius: '50px',
-                  boxShadow: 'var(--shadow-sm)'
-                }}>
-                  Verified Expert
-                </span>
-                
-                {/* Available Badge */}
-                <span style={{
-                  position: 'absolute', top: 12, right: 12,
-                  backgroundColor: '#10b981', color: '#fff',
-                  fontSize: '11px', fontWeight: 700, padding: '4px 10px', borderRadius: '50px',
-                  boxShadow: 'var(--shadow-sm)'
-                }}>
-                  Available Today
-                </span>
-              </div>
-
-              {/* Doctor Profile Info */}
-              <div className="card-body" style={{ padding: isMobile ? 'var(--space-4)' : 'var(--space-5)', paddingTop: 0, display: 'flex', flexDirection: 'column', flex: 1, gap: 'var(--space-3)' }}>
-                {/* Avatar positioning */}
-                <div style={{ display: 'flex', gap: 'var(--space-3)', marginTop: isMobile ? '-30px' : '-40px' }}>
+              <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', flex: 1, backgroundColor: 'white' }}>
+                <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-start', marginBottom: '16px' }}>
+                  {/* Avatar */}
                   <img
                     src={doc.profileImage || `https://api.dicebear.com/7.x/adventurer/svg?seed=${encodeURIComponent(doc.name)}`}
                     alt={doc.name}
                     style={{
-                      width: isMobile ? '60px' : '72px', height: isMobile ? '60px' : '72px', borderRadius: 'var(--radius-lg)',
-                      border: '3px solid var(--bg-primary)', backgroundColor: 'var(--bg-secondary)',
-                      boxShadow: 'var(--shadow-md)', objectFit: 'cover'
+                      width: '64px', height: '64px', borderRadius: '16px',
+                      backgroundColor: 'var(--bg-secondary)', objectFit: 'cover'
                     }}
                   />
-                  <div style={{ paddingTop: isMobile ? '34px' : '44px' }}>
-                    <h3 style={{ fontSize: 'var(--font-size-base)', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
+                       {consultMode === 'video' && doc.isAvailableForVideoConsult && (
+                         <span style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '10px', fontWeight: 700, color: 'white', background: 'linear-gradient(90deg,#059669,#0ea5e9)', padding: '3px 8px', borderRadius: '6px' }}>
+                           <motion.span animate={{ opacity: [1,0.3,1] }} transition={{ duration: 1.2, repeat: Infinity }} style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'white', display: 'inline-block' }} />
+                           LIVE
+                         </span>
+                       )}
+                       <span style={{ fontSize: '10px', fontWeight: 700, color: '#10b981', backgroundColor: '#ecfdf5', padding: '3px 8px', borderRadius: '6px' }}>Available Today</span>
+                       <span style={{ fontSize: '10px', fontWeight: 700, color: 'var(--color-primary-600)', backgroundColor: 'var(--color-primary-50)', padding: '3px 8px', borderRadius: '6px' }}>Verified</span>
+                    </div>
+                    <h3 style={{ fontSize: '16px', fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                       {doc.name}
                     </h3>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '4px' }}>
-                      <span className="badge badge-info" style={{ fontSize: '11px' }}>
-                        {doc.specialization}
-                      </span>
+                    <div style={{ fontSize: '12px', color: 'var(--color-primary-600)', fontWeight: 600 }}>
+                      {doc.specialization}
                     </div>
                   </div>
                 </div>
 
-                {/* Rating & Fee Row (Swiggy Style) */}
+                {/* Rating & Fee */}
                 <div style={{
                   display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                  padding: '12px 0', borderBottom: '1px dashed var(--border-light)',
-                  borderTop: '1px dashed var(--border-light)', marginTop: '4px'
+                  padding: '12px 0', borderBottom: '1px solid var(--border-light)', borderTop: '1px solid var(--border-light)',
+                  marginBottom: '14px'
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <span style={{
-                      backgroundColor: '#16a34a', color: '#fff', display: 'flex',
-                      alignItems: 'center', gap: '2px', padding: '2px 8px', borderRadius: '4px',
-                      fontSize: '12px', fontWeight: 700
-                    }}>
-                      {doc.rating} <Star size={11} fill="#fff" />
-                    </span>
-                    <span style={{ fontSize: '11px', color: 'var(--text-tertiary)' }}>
-                      ({doc.ratingCount} ratings)
-                    </span>
+                    <Star size={15} fill="#f59e0b" color="#f59e0b" />
+                    <span style={{ fontWeight: 700, fontSize: '13px', color: 'var(--text-primary)' }}>{doc.rating}</span>
+                    <span style={{ fontSize: '12px', color: 'var(--text-tertiary)', fontWeight: 500 }}>({doc.ratingCount} reviews)</span>
                   </div>
-                  <div style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: 'var(--font-size-sm)' }}>
-                    ₹{doc.consultationFee} <span style={{ fontWeight: 400, color: 'var(--text-secondary)', fontSize: '11px' }}>fee</span>
+                  <div style={{ fontWeight: 800, color: 'var(--text-primary)', fontSize: '15px' }}>
+                    ₹{doc.consultationFee} <span style={{ fontWeight: 500, color: 'var(--text-secondary)', fontSize: '12px' }}>/ visit</span>
                   </div>
                 </div>
 
-                {/* Bio text snippet */}
-                <p style={{
-                  fontSize: 'var(--font-size-xs)', color: 'var(--text-secondary)',
-                  lineHeight: 1.4, margin: '4px 0',
-                  display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden'
-                }}>
-                  {doc.bio}
-                </p>
-
-                {/* Details List */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)', fontSize: 'var(--font-size-xs)', color: 'var(--text-secondary)', flex: 1 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-                    <Award size={13} style={{ color: 'var(--text-tertiary)' }} />
-                    <span>{doc.experience} Years Experience ({doc.qualifications.join(', ')})</span>
+                {/* Bio / Details */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', flex: 1 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 500 }}>
+                    <Award size={15} color="var(--text-tertiary)" />
+                    <span>{doc.experience} Years Exp • {doc.qualifications.join(', ')}</span>
                   </div>
-
-                  {/* Affiliated Clinics / Organizations */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                    <span style={{ fontSize: '10px', color: 'var(--text-tertiary)', textTransform: 'uppercase', fontWeight: 600 }}>Affiliations</span>
-                    {doc.organizations && doc.organizations.length > 0 ? (
-                      doc.organizations.map((org, idx) => (
-                        <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-primary)' }}>
-                          <Building2 size={12} style={{ color: 'var(--color-primary-500)' }} />
-                          <span style={{ fontWeight: 500 }}>{org.name} <span style={{ color: 'var(--text-secondary)', fontWeight: 400 }}>({org.city})</span></span>
-                        </div>
-                      ))
-                    ) : (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <Building2 size={12} style={{ color: 'var(--text-tertiary)' }} />
-                        <span>Independent Practitioner</span>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Symptoms tags list */}
+                  {doc.organizations && doc.organizations.length > 0 ? (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 500 }}>
+                      <Building2 size={15} color="var(--text-tertiary)" />
+                      <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{doc.organizations[0].name}</span>
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 500 }}>
+                      <Building2 size={15} color="var(--text-tertiary)" />
+                      <span>Independent Practitioner</span>
+                    </div>
+                  )}
+                  {/* Symptoms tags */}
                   {doc.symptoms && doc.symptoms.length > 0 && (
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '6px' }}>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '4px' }}>
                       {doc.symptoms.slice(0, 3).map((sym, i) => (
                         <span key={i} style={{
                           backgroundColor: 'var(--bg-secondary)', color: 'var(--text-secondary)',
-                          padding: '2px 8px', borderRadius: '4px', fontSize: '10px'
+                          padding: '4px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 600
                         }}>
                           {sym}
                         </span>
                       ))}
                       {doc.symptoms.length > 3 && (
-                        <span style={{ fontSize: '10px', color: 'var(--text-tertiary)', padding: '2px' }}>
+                        <span style={{ fontSize: '11px', color: 'var(--text-tertiary)', padding: '4px', fontWeight: 500 }}>
                           +{doc.symptoms.length - 3} more
                         </span>
                       )}
@@ -714,21 +735,31 @@ export default function FindDoctorsPage() {
                 </div>
 
                 {/* Primary Card Buttons */}
-                <div style={{ display: 'flex', gap: 'var(--space-2)', marginTop: '8px' }}>
+                <div style={{ display: 'flex', gap: '10px', marginTop: '18px' }}>
                   <button
                     className="btn btn-secondary"
                     onClick={() => handleOpenGrantModal(doc)}
-                    style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', fontSize: 'var(--font-size-xs)', padding: '8px 10px' }}
+                    style={{ flex: 1, padding: '10px 0', fontSize: '13px', fontWeight: 700, borderRadius: '12px' }}
                   >
-                    <Key size={13} /> Grant Access
+                    Grant Access
                   </button>
-                  <button
-                    className="btn btn-primary"
-                    onClick={() => handleOpenBookingModal(doc)}
-                    style={{ flex: 1.4, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', fontSize: 'var(--font-size-xs)', padding: '8px 10px' }}
-                  >
-                    <Calendar size={13} /> Book Now
-                  </button>
+                  {consultMode === 'video' ? (
+                    <button
+                      className="btn btn-primary"
+                      onClick={() => navigate('/patient/video-consult')}
+                      style={{ flex: 1.5, padding: '10px 0', fontSize: '13px', fontWeight: 700, borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', background: 'linear-gradient(135deg,#059669,#0ea5e9)', border: 'none' }}
+                    >
+                      <Video size={14} /> Instant Video
+                    </button>
+                  ) : (
+                    <button
+                      className="btn btn-primary"
+                      onClick={() => handleOpenBookingModal(doc)}
+                      style={{ flex: 1.5, padding: '10px 0', fontSize: '13px', fontWeight: 700, borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+                    >
+                      <Calendar size={14} /> Book Now
+                    </button>
+                  )}
                 </div>
               </div>
             </motion.div>

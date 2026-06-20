@@ -9,6 +9,9 @@ import './index.css';
 import './styles/components.css';
 import './styles/layout.css';
 
+// ─── Landing Module ───
+const LandingPage = lazy(() => import('./modules/landing/LandingPage'));
+
 // ─── Auth Module ───
 const LoginPage = lazy(() => import('./modules/auth/LoginPage'));
 
@@ -16,11 +19,12 @@ const LoginPage = lazy(() => import('./modules/auth/LoginPage'));
 const PatientDashboardPage = lazy(() => import('./modules/patient/PatientDashboardPage'));
 const PatientProfilePage = lazy(() => import('./modules/patient/PatientProfilePage'));
 const EmergencyQRPage = lazy(() => import('./modules/patient/EmergencyQRPage'));
-const AccessGrantsPage = lazy(() => import('./modules/patient/AccessGrantsPage'));
 const AccessRequestsPage = lazy(() => import('./modules/patient/AccessRequestsPage'));
 const AccessLogsPage = lazy(() => import('./modules/patient/AccessLogsPage'));
 const FindDoctorsPage = lazy(() => import('./modules/patient/FindDoctorsPage'));
 const PatientAppointmentsPage = lazy(() => import('./modules/patient/AppointmentsPage'));
+const VideoConsultPage = lazy(() => import('./modules/patient/VideoConsultPage'));
+const VideoRoomPage = lazy(() => import('./modules/shared/VideoRoomPage'));
 
 // ─── Doctor Module ───
 const DoctorDashboardPage = lazy(() => import('./modules/doctor/DoctorDashboardPage'));
@@ -30,6 +34,7 @@ const DoctorAppointmentsPage = lazy(() => import('./modules/doctor/AppointmentsP
 const ClinicalNotesPage = lazy(() => import('./modules/doctor/ClinicalNotesPage'));
 const DoctorAccessLogsPage = lazy(() => import('./modules/doctor/DoctorAccessLogsPage'));
 const SchedulePage = lazy(() => import('./modules/doctor/SchedulePage'));
+const DoctorVideoPage = lazy(() => import('./modules/doctor/DoctorVideoPage'));
 
 // ─── Admin Module ───
 const AdminDashboardPage = lazy(() => import('./modules/admin/AdminDashboardPage'));
@@ -126,11 +131,14 @@ export default function App() {
           <Route path="/patient/dashboard" element={<ProtectedRoute role="patient"><PatientDashboardPage /></ProtectedRoute>} />
           <Route path="/patient/profile" element={<ProtectedRoute role="patient"><PatientProfilePage /></ProtectedRoute>} />
           <Route path="/patient/emergency-qr" element={<ProtectedRoute role="patient"><EmergencyQRPage /></ProtectedRoute>} />
-          <Route path="/patient/access-grants" element={<ProtectedRoute role="patient"><AccessGrantsPage /></ProtectedRoute>} />
           <Route path="/patient/access-requests" element={<ProtectedRoute role="patient"><AccessRequestsPage /></ProtectedRoute>} />
           <Route path="/patient/access-logs" element={<ProtectedRoute role="patient"><AccessLogsPage /></ProtectedRoute>} />
           <Route path="/patient/doctors" element={<ProtectedRoute role="patient"><FindDoctorsPage /></ProtectedRoute>} />
           <Route path="/patient/appointments" element={<ProtectedRoute role="patient"><PatientAppointmentsPage /></ProtectedRoute>} />
+          <Route path="/patient/video-consult" element={<ProtectedRoute role="patient"><VideoConsultPage /></ProtectedRoute>} />
+          {/* Consultation redirect aliases */}
+          <Route path="/patient/online-consult" element={<Navigate to="/patient/video-consult" replace />} />
+          <Route path="/patient/offline-consult" element={<Navigate to="/patient/doctors" replace />} />
 
           {/* ═══ Doctor Routes ═══ */}
           <Route path="/doctor/dashboard" element={<ProtectedRoute role="doctor"><DoctorDashboardPage /></ProtectedRoute>} />
@@ -141,6 +149,7 @@ export default function App() {
           <Route path="/doctor/access-logs" element={<ProtectedRoute role="doctor"><DoctorAccessLogsPage /></ProtectedRoute>} />
           <Route path="/doctor/appointments" element={<ProtectedRoute role="doctor"><DoctorAppointmentsPage /></ProtectedRoute>} />
           <Route path="/doctor/schedule" element={<ProtectedRoute role="doctor"><SchedulePage /></ProtectedRoute>} />
+          <Route path="/doctor/video-consult" element={<ProtectedRoute role="doctor"><DoctorVideoPage /></ProtectedRoute>} />
 
           {/* ═══ Admin Routes (Platform Admin only) ═══ */}
           <Route path="/admin/dashboard" element={<ProtectedRoute role="admin"><AdminDashboardPage /></ProtectedRoute>} />
@@ -158,8 +167,11 @@ export default function App() {
           {/* ═══ Staff Routes ═══ */}
           <Route path="/staff/dashboard" element={<ProtectedRoute role="staff"><StaffDashboardPage /></ProtectedRoute>} />
 
+          {/* ═══ Shared Video Room (doctor OR patient) ═══ */}
+          <Route path="/video-room/:appointmentId" element={<VideoRoomPage />} />
+
           {/* ═══ Fallback ═══ */}
-          <Route path="/" element={<Navigate to="/login" replace />} />
+          <Route path="/" element={<LandingPage />} />
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
       </Suspense>

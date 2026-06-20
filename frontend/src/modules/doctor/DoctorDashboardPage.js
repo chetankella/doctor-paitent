@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { Users, Search, FileText, Activity } from 'lucide-react';
+import { Users, Search, FileText, Activity, Video } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '../../layouts/DashboardLayout';
 import { StatCard, EmptyState, Spinner, Pagination } from '../../components/ui';
@@ -69,6 +69,35 @@ export default function DoctorDashboardPage() {
           </div>
         </motion.div>
       </div>
+
+      {/* Video Consult Banner */}
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}
+        onClick={() => navigate('/doctor/video-consult')}
+        whileHover={{ scale: 1.01 }}
+        style={{
+          background: 'linear-gradient(135deg, #059669 0%, #0ea5e9 100%)',
+          borderRadius: '16px', padding: '20px 24px', marginBottom: 'var(--space-6)',
+          cursor: 'pointer', color: 'white',
+          display: 'flex', alignItems: 'center', gap: '16px',
+          boxShadow: '0 8px 32px rgba(5,150,105,0.25)'
+        }}
+      >
+        <div style={{
+          width: '48px', height: '48px', borderRadius: '14px',
+          background: 'rgba(255,255,255,0.2)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
+        }}>
+          <Video size={24} />
+        </div>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontWeight: 800, fontSize: '16px', marginBottom: '2px' }}>Go Live for Instant Video Consultations</div>
+          <div style={{ fontSize: '13px', opacity: 0.85 }}>Toggle your availability and start receiving instant consult requests from patients</div>
+        </div>
+        <div style={{ opacity: 0.7, fontSize: '22px' }}>›</div>
+      </motion.div>
 
       {/* Patient List */}
       <div className="card">

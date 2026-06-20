@@ -5,7 +5,7 @@ import {
   Menu, LogOut, Sun, Moon, ChevronLeft, X,
   LayoutDashboard, Shield, QrCode, Key, ClipboardList, Bell, Clock,
   Users, Search, Activity, Building2, GitBranch,
-  Mail, UserCog,
+  Mail, UserCog, Video,
 } from 'lucide-react';
 import useAuthStore from '../store/authStore';
 import useUIStore from '../store/uiStore';
@@ -20,11 +20,11 @@ const PATIENT_NAV = [
     { to: '/patient/emergency-qr', icon: QrCode, label: 'Emergency QR' },
   ]},
   { section: 'Medical Network', items: [
+    { to: '/patient/video-consult', icon: Video, label: 'Instant Video Consult' },
     { to: '/patient/doctors', icon: Search, label: 'Find & Book Doctors' },
     { to: '/patient/appointments', icon: ClipboardList, label: 'My Appointments' },
   ]},
   { section: 'Access Control', items: [
-    { to: '/patient/access-grants', icon: Key, label: 'Access Grants' },
     { to: '/patient/access-requests', icon: Bell, label: 'Requests' },
     { to: '/patient/access-logs', icon: ClipboardList, label: 'Access Logs' },
   ]},
@@ -38,6 +38,9 @@ const DOCTOR_NAV = [
     { to: '/doctor/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
     { to: '/doctor/schedule', icon: Clock, label: 'Schedule' },
     { to: '/doctor/appointments', icon: ClipboardList, label: 'Appointments' },
+  ]},
+  { section: 'Video Consult', items: [
+    { to: '/doctor/video-consult', icon: Video, label: 'Go Live / Video' },
   ]},
   { section: 'Patients', items: [
     { to: '/doctor/patients', icon: Users, label: 'My Patients' },
@@ -103,17 +106,17 @@ function getBottomNavItems(role) {
   switch (role) {
     case 'patient': return [
       { to: '/patient/dashboard', icon: LayoutDashboard, label: 'Home' },
+      { to: '/patient/video-consult', icon: Video, label: 'Video' },
       { to: '/patient/doctors', icon: Search, label: 'Doctors' },
       { to: '/patient/appointments', icon: ClipboardList, label: 'Bookings' },
-      { to: '/patient/access-grants', icon: Key, label: 'Access' },
       { to: '/patient/profile', icon: Shield, label: 'Profile' },
     ];
     case 'doctor': return [
       { to: '/doctor/dashboard', icon: LayoutDashboard, label: 'Home' },
-      { to: '/doctor/schedule', icon: Clock, label: 'Schedule' },
+      { to: '/doctor/video-consult', icon: Video, label: 'Video' },
       { to: '/doctor/appointments', icon: ClipboardList, label: 'Bookings' },
       { to: '/doctor/patients', icon: Users, label: 'Patients' },
-      { to: '/doctor/request-access', icon: Search, label: 'Access' },
+      { to: '/doctor/schedule', icon: Clock, label: 'Schedule' },
     ];
     case 'admin': return [
       { to: '/admin/dashboard', icon: LayoutDashboard, label: 'Home' },
@@ -333,17 +336,92 @@ export default function DashboardLayout({ children, title = 'Dashboard' }) {
 
       {/* ─── Mobile Bottom Navigation Bar ─── */}
       {isMobile && bottomNavItems.length > 0 && (
-        <nav className="bottom-nav">
+        <nav style={{
+          position: 'fixed',
+          bottom: '20px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          width: 'calc(100% - 40px)',
+          maxWidth: '400px',
+          height: '64px',
+          background: 'rgba(255,255,255,0.92)',
+          backdropFilter: 'blur(24px)',
+          WebkitBackdropFilter: 'blur(24px)',
+          border: '1px solid rgba(255,255,255,0.7)',
+          borderRadius: '32px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-around',
+          padding: '0 6px',
+          zIndex: 900,
+          boxShadow: '0 12px 40px rgba(0,0,0,0.14), 0 2px 8px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.9)',
+        }}>
           {bottomNavItems.map((item) => {
             const isActive = location.pathname === item.to;
             return (
               <NavLink
                 key={item.to}
                 to={item.to}
-                className={`bottom-nav-item ${isActive ? 'active' : ''}`}
+                style={{
+                  flex: 1,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '2px',
+                  padding: '6px 4px',
+                  borderRadius: '24px',
+                  textDecoration: 'none',
+                  position: 'relative',
+                  minHeight: '52px',
+                  WebkitTapHighlightColor: 'transparent',
+                }}
               >
-                <item.icon size={20} />
-                <span>{item.label}</span>
+                {/* Sliding active pill — same layoutId so it glides between tabs */}
+                {isActive && (
+                  <motion.div
+                    layoutId="bottom-nav-active-pill"
+                    style={{
+                      position: 'absolute',
+                      inset: '4px 6px',
+                      borderRadius: '20px',
+                      background: 'linear-gradient(135deg, #2563eb 0%, #0ea5e9 100%)',
+                      boxShadow: '0 4px 16px rgba(37,99,235,0.4)',
+                      zIndex: 0,
+                    }}
+                    transition={{ type: 'spring', stiffness: 480, damping: 36 }}
+                  />
+                )}
+
+                {/* Icon */}
+                <motion.div
+                  animate={isActive
+                    ? { y: -1, scale: 1.08, color: '#ffffff' }
+                    : { y: 0, scale: 1, color: '#94a3b8' }
+                  }
+                  transition={{ type: 'spring', stiffness: 400, damping: 22 }}
+                  style={{ position: 'relative', zIndex: 1, display: 'flex' }}
+                >
+                  <item.icon size={21} strokeWidth={isActive ? 2.5 : 1.8} />
+                </motion.div>
+
+                {/* Label — only shows under active tab */}
+                <motion.span
+                  animate={{ opacity: isActive ? 1 : 0, y: isActive ? 0 : 4 }}
+                  transition={{ duration: 0.18, ease: 'easeOut' }}
+                  style={{
+                    position: 'relative',
+                    zIndex: 1,
+                    fontSize: '9px',
+                    fontWeight: 700,
+                    color: '#ffffff',
+                    letterSpacing: '0.02em',
+                    whiteSpace: 'nowrap',
+                    lineHeight: 1,
+                  }}
+                >
+                  {item.label}
+                </motion.span>
               </NavLink>
             );
           })}

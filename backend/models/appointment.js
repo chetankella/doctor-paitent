@@ -51,6 +51,23 @@ const appointmentSchema = new mongoose.Schema({
     prescriptionName: {
         type: String,
         default: null
+    },
+    // Video consultation fields
+    type: {
+        type: String,
+        enum: ["SCHEDULED", "INSTANT_VIDEO"],
+        default: "SCHEDULED"
+    },
+    videoRoomId: {
+        type: String,
+        default: null,
+        unique: true,
+        sparse: true  // allows multiple nulls
+    },
+    videoStatus: {
+        type: String,
+        enum: ["PENDING", "ACTIVE", "ENDED"],
+        default: "PENDING"
     }
 }, { timestamps: true });
 

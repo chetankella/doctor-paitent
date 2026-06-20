@@ -27,7 +27,7 @@ const server = http.createServer(app);
 
 const io = new Server(server, {
     cors: {
-        origin: process.env.FRONTEND_URL || "http://localhost:3000",
+        origin: [process.env.FRONTEND_URL, "http://localhost:3000", "http://192.168.1.10:3000"],
         methods: ["GET", "POST"]
     }
 });
@@ -42,10 +42,56 @@ app.use((req, res, next) => {
 io.on("connection", (socket) => {
     console.log(`User connected: ${socket.id}`);
 
-    // Join a specific appointment room
+    // Join a specific appointment room (used for chat)
     socket.on("join_appointment", (appointmentId) => {
         socket.join(appointmentId);
         console.log(`User joined appointment room: ${appointmentId}`);
+    });
+
+    // ─── Video Consultation Signalling ───────────────────────────
+    // Join a video room (keyed by videoRoomId)
+    socket.on("video:join", ({ roomId, userId, role }) => {
+        const room = `video:${roomId}`;
+        socket.join(room);
+        // Notify other peers in the room that someone joined
+        socket.to(room).emit("video:peer_joined", { userId, role, socketId: socket.id });
+        console.log(`${role} (${userId}) joined video room: ${roomId}`);
+    });
+
+    // Relay WebRTC offer to the other peer
+    socket.on("video:offer", ({ roomId, offer, targetSocketId }) => {
+        const room = `video:${roomId}`;
+        if (targetSocketId) {
+            io.to(targetSocketId).emit("video:offer", { offer, fromSocketId: socket.id });
+        } else {
+            socket.to(room).emit("video:offer", { offer, fromSocketId: socket.id });
+        }
+    });
+
+    // Relay WebRTC answer to the offering peer
+    socket.on("video:answer", ({ roomId, answer, targetSocketId }) => {
+        const room = `video:${roomId}`;
+        if (targetSocketId) {
+            io.to(targetSocketId).emit("video:answer", { answer, fromSocketId: socket.id });
+        } else {
+            socket.to(room).emit("video:answer", { answer, fromSocketId: socket.id });
+        }
+    });
+
+    // Relay ICE candidates
+    socket.on("video:ice-candidate", ({ roomId, candidate, targetSocketId }) => {
+        const room = `video:${roomId}`;
+        if (targetSocketId) {
+            io.to(targetSocketId).emit("video:ice-candidate", { candidate, fromSocketId: socket.id });
+        } else {
+            socket.to(room).emit("video:ice-candidate", { candidate, fromSocketId: socket.id });
+        }
+    });
+
+    // One peer signals the call is over
+    socket.on("video:end", ({ roomId }) => {
+        const room = `video:${roomId}`;
+        socket.to(room).emit("video:call_ended", { endedBy: socket.id });
     });
 
     socket.on("disconnect", () => {
@@ -65,7 +111,7 @@ const limiter = rateLimit({
 
 // Stricter CORS
 app.use(cors({
-    origin: process.env.FRONTEND_URL || "http://localhost:3000",
+    origin: [process.env.FRONTEND_URL, "http://localhost:3000", "http://192.168.1.10:3000"],
     credentials: true
 }));
 

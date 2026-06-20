@@ -24,6 +24,7 @@ const accessGrantCtrl = require("../controllers/accessGrant.controller");
 const emergencyCtrl = require("../controllers/emergency.controller");
 const accessLogCtrl = require("../controllers/accessLog.controller");
 const accessRequestCtrl = require("../controllers/accessRequest.controller");
+const videoConsultCtrl = require("../controllers/videoConsult.controller");
 
 // ─── Middleware ───
 const authMiddleware = require("../middleware/authorize");
@@ -98,6 +99,14 @@ router.get("/me/access-logs", authMiddleware, authorize("patient"), accessLogCtr
 // ═══════════════════════════════════════════════════════════
 router.get("/me/access-requests", authMiddleware, authorize("patient"), accessRequestCtrl.listPatientRequests);
 router.patch("/me/access-requests/:requestId", authMiddleware, authorize("patient"), accessRequestCtrl.respondToRequest);
+
+
+// ═══════════════════════════════════════════════════════════
+// VIDEO CONSULTATION  (/me/instant-doctors, /me/instant-consult)
+// ═══════════════════════════════════════════════════════════
+router.get("/me/instant-doctors", authMiddleware, authorize("patient"), videoConsultCtrl.getInstantDoctors);
+router.post("/me/instant-consult", authMiddleware, authorize("patient"), videoConsultCtrl.bookInstantConsult);
+router.get("/me/appointments/:appointmentId/video-token", authMiddleware, authorize("patient"), videoConsultCtrl.getVideoToken);
 
 
 // ═══════════════════════════════════════════════════════════
